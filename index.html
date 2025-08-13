@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photobox Digital PRO — Pastel Purple/Blue</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#faf8ff', 100: '#f4f1ff', 200: '#ebe7ff', 300: '#dcd4ff', 400: '#bda7ff',
+              500: '#9b7cff', 600: '#7b5bff', 700: '#6548e0', 800: '#5239b8', 900: '#3e2b8e'
+            },
+            ocean: {
+              50: '#f4fbff', 100: '#e9f6ff', 200: '#d5ecff', 300: '#b5deff', 400: '#85c8ff',
+              500: '#56b0ff', 600: '#3299ff', 700: '#1f7ddb', 800: '#1c67b3', 900: '#184f87'
+            }
+          },
+          boxShadow: {
+            glow: '0 10px 40px rgba(123, 91, 255, 0.25)',
+            soft: '0 8px 30px rgba(16, 24, 40, 0.08)'
+          },
+          backdropBlur: {
+            14: '14px'
+          },
+          fontFamily: {
+            display: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Checkerboard background for stage */
+    .checker {
+      background-image:
+        linear-gradient(45deg, rgba(0,0,0,.04) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(0,0,0,.04) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(0,0,0,.04) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(0,0,0,.04) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    .dragging { cursor: grabbing !important; }
+  </style>
+</head>
+<body class="min-h-screen font-display bg-gradient-to-br from-white via-ocean-50 to-brand-50 text-slate-800">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-white/40 bg-white/60 backdrop-blur-14">
+    <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-2xl bg-gradient-to-br from-brand-500 to-ocean-500 shadow-glow"></div>
+        <div>
+          <h1 class="text-lg md:text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-ocean-700">Photobox Digital PRO</h1>
+          <p class="text-xs text-slate-500 -mt-0.5">Pastel • Ungu + Gradasi Biru • Responsif</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnTheme" class="px-3 py-2 rounded-xl text-sm border border-slate-200/70 bg-white/70 hover:bg-white transition shadow-soft">Tema Pastel</button>
+        <button id="btnDownload" class="px-3 py-2 rounded-xl text-sm text-white bg-gradient-to-r from-brand-600 to-ocean-600 hover:from-brand-700 hover:to-ocean-700 shadow-glow">Download</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <!-- Stage -->
+    <section class="lg:col-span-3">
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs text-slate-600">
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-brand-100 to-ocean-100 border border-white">Frame</span>
+            <span id="aspectLabel" class="px-2 py-1 rounded-lg bg-white/80 border border-slate-200">1:1</span>
+            <span id="layoutLabel" class="px-2 py-1 rounded-lg bg-white/80 border border-slate-200">Single</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnClearOverlays" class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white/80 hover:bg-white">Bersihkan Overlay</button>
+          </div>
+        </div>
+
+        <!-- Stage area (captured for download) -->
+        <div id="captureRoot" class="rounded-2xl p-4 checker bg-white/60 relative overflow-hidden">
+          <!-- Frame styles wrapper -->
+          <div id="frameWrap" class="relative mx-auto rounded-2xl bg-white shadow-soft transition-all duration-300">
+            <!-- Aspect ratio box -->
+            <div id="arBox" class="relative w-full aspect-square">
+              <!-- Grid for layouts -->
+              <div id="frameGrid" class="absolute inset-0 grid grid-cols-1 grid-rows-1 gap-2 p-2">
+                <!-- Slots (images/video snapshots will render here) -->
+                <div class="slot relative rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400">
+                  <img class="slot-img max-w-full max-h-full object-contain select-none" alt="" />
+                </div>
+              </div>
+
+              <!-- Overlays (stickers & texts) -->
+              <div id="overlayLayer" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500">Tip: drag & drop gambar ke area frame, atau pakai Kamera untuk ambil foto cepat. Klik item overlay (stiker/teks) untuk memindahkan.</p>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <aside class="lg:col-span-2 space-y-6">
+      <!-- Input Source -->
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <h2 class="text-sm font-semibold mb-3">Sumber Gambar</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-brand-50/50">Upload
+            <input id="fileInput" type="file" accept="image/*" class="hidden" />
+          </label>
+          <button id="btnStartCam" class="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-ocean-50/50">Start Kamera</button>
+          <button id="btnSnap" class="px-3 py-2 text-sm rounded-xl text-white bg-gradient-to-r from-brand-600 to-ocean-600 hover:from-brand-700 hover:to-ocean-700 disabled:opacity-40" disabled>Snap!</button>
+          <button id="btnStopCam" class="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-red-50 disabled:opacity-40" disabled>Stop</button>
+        </div>
+        <div class="mt-3 rounded-xl overflow-hidden border border-slate-200">
+          <video id="video" class="w-full aspect-video bg-slate-100 hidden"></video>
+        </div>
+      </div>
+
+      <!-- Layout & Aspect -->
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <h2 class="text-sm font-semibold mb-3">Layout & Rasio</h2>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button data-ar="1/1" class="btn-ar">1:1</button>
+          <button data-ar="3/4" class="btn-ar">3:4</button>
+          <button data-ar="9/16" class="btn-ar">9:16</button>
+          <button data-ar="4/3" class="btn-ar">4:3</button>
+          <button data-ar="16/9" class="btn-ar">16:9</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button data-layout="single" class="btn-layout">Single</button>
+          <button data-layout="strip" class="btn-layout">Strip (2)</button>
+          <button data-layout="grid2" class="btn-layout">Grid 2x2</button>
+        </div>
+      </div>
+
+      <!-- Frame Styles -->
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <h2 class="text-sm font-semibold mb-3">Gaya Frame</h2>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-frame="none" class="btn-frame">None</button>
+          <button data-frame="polaroid" class="btn-frame">Polaroid</button>
+          <button data-frame="neon" class="btn-frame">Neon Glow</button>
+          <button data-frame="glass" class="btn-frame">Glass Frosted</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <h2 class="text-sm font-semibold mb-1">Filter Foto</h2>
+        <p class="text-xs text-slate-500 mb-3">Real-time: brightness, contrast, saturation, sepia, blur</p>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs">Brightness <span id="val-bri">100</span>%</label>
+            <input id="sl-bri" type="range" min="50" max="200" value="100" class="w-full" />
+          </div>
+          <div>
+            <label class="text-xs">Contrast <span id="val-con">100</span>%</label>
+            <input id="sl-con" type="range" min="50" max="200" value="100" class="w-full" />
+          </div>
+          <div>
+            <label class="text-xs">Saturation <span id="val-sat">100</span>%</label>
+            <input id="sl-sat" type="range" min="0" max="200" value="100" class="w-full" />
+          </div>
+          <div>
+            <label class="text-xs">Sepia <span id="val-sep">0</span>%</label>
+            <input id="sl-sep" type="range" min="0" max="100" value="0" class="w-full" />
+          </div>
+          <div>
+            <label class="text-xs">Blur <span id="val-blr">0</span>px</label>
+            <input id="sl-blr" type="range" min="0" max="10" value="0" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlays -->
+      <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-14 shadow-soft p-4">
+        <h2 class="text-sm font-semibold mb-3">Overlay (Teks & Stiker)</h2>
+        <div class="space-y-3">
+          <div class="flex gap-2">
+            <input id="textInput" type="text" placeholder="Tulis teks..." class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white" />
+            <select id="fontSelect" class="px-3 py-2 rounded-xl border border-slate-200 bg-white">
+              <option value="font-sans">Sans</option>
+              <option value="font-serif">Serif</option>
+              <option value="font-mono">Mono</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs">Size</label>
+            <input id="textSize" type="range" min="12" max="72" value="28" class="flex-1" />
+            <button id="btnAddText" class="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-brand-50/70">Tambah Teks</button>
+          </div>
+          <div class="text-xs text-slate-500">Stiker: klik untuk menambah, lalu drag di frame</div>
+          <div id="stickerPanel" class="flex flex-wrap gap-2 text-2xl select-none">
+            <button class="sticker">💜</button>
+            <button class="sticker">⭐</button>
+            <button class="sticker">✨</button>
+            <button class="sticker">📸</button>
+            <button class="sticker">🌈</button>
+            <button class="sticker">🫶</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mx-auto max-w-7xl px-4 pb-8">
+    <div class="text-xs text-slate-500">Made with 💜 — Tailwind CSS • Export menggunakan html2canvas.</div>
+  </footer>
+
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    // Utility
+    const $ = (q, ctx=document) => ctx.querySelector(q);
+    const $$ = (q, ctx=document) => Array.from(ctx.querySelectorAll(q));
+
+    const frameWrap = $('#frameWrap');
+    const arBox = $('#arBox');
+    const frameGrid = $('#frameGrid');
+    const overlayLayer = $('#overlayLayer');
+
+    const aspectLabel = $('#aspectLabel');
+    const layoutLabel = $('#layoutLabel');
+
+    // Apply filters
+    const sliders = {
+      bri: $('#sl-bri'), con: $('#sl-con'), sat: $('#sl-sat'), sep: $('#sl-sep'), blr: $('#sl-blr')
+    };
+    const valLabels = {
+      bri: $('#val-bri'), con: $('#val-con'), sat: $('#val-sat'), sep: $('#val-sep'), blr: $('#val-blr')
+    };
+    function updateFilters() {
+      valLabels.bri.textContent = sliders.bri.value;
+      valLabels.con.textContent = sliders.con.value;
+      valLabels.sat.textContent = sliders.sat.value;
+      valLabels.sep.textContent = sliders.sep.value;
+      valLabels.blr.textContent = sliders.blr.value;
+      const filterStr = `brightness(${sliders.bri.value}%) contrast(${sliders.con.value}%) saturate(${sliders.sat.value}%) sepia(${sliders.sep.value}%) blur(${sliders.blr.value}px)`;
+      $$('.slot-img').forEach(img => img.style.filter = filterStr);
+    }
+    Object.values(sliders).forEach(s => s.addEventListener('input', updateFilters));
+
+    // Aspect ratio
+    $$('.btn-ar').forEach(btn => {
+      btn.className = 'btn-ar px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-brand-50/50';
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.ar;
+        arBox.style.aspectRatio = v;
+        aspectLabel.textContent = v.replace('/', ':');
+      });
+    });
+
+    // Layouts
+    function buildLayout(type) {
+      layoutLabel.textContent = type === 'single' ? 'Single' : type === 'strip' ? 'Strip (2)' : 'Grid 2x2';
+      frameGrid.innerHTML = '';
+      if (type === 'single') {
+        frameGrid.className = 'absolute inset-0 grid grid-cols-1 grid-rows-1 gap-2 p-2';
+        frameGrid.appendChild(makeSlot());
+      } else if (type === 'strip') {
+        frameGrid.className = 'absolute inset-0 grid grid-cols-1 grid-rows-2 gap-2 p-2';
+        frameGrid.appendChild(makeSlot());
+        frameGrid.appendChild(makeSlot());
+      } else if (type === 'grid2') {
+        frameGrid.className = 'absolute inset-0 grid grid-cols-2 grid-rows-2 gap-2 p-2';
+        for (let i=0;i<4;i++) frameGrid.appendChild(makeSlot());
+      }
+      updateFilters();
+    }
+    function makeSlot() {
+      const slot = document.createElement('div');
+      slot.className = 'slot relative rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400';
+      const img = document.createElement('img');
+      img.className = 'slot-img max-w-full max-h-full object-contain select-none';
+      slot.appendChild(img);
+      // Drag & Drop support
+      slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('ring-2','ring-brand-300'); });
+      slot.addEventListener('dragleave', e => { slot.classList.remove('ring-2','ring-brand-300'); });
+      slot.addEventListener('drop', e => {
+        e.preventDefault(); slot.classList.remove('ring-2','ring-brand-300');
+        const file = e.dataTransfer.files?.[0]; if (!file) return;
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = () => { img.src = reader.result; };
+        reader.readAsDataURL(file);
+      });
+      return slot;
+    }
+
+    $$('.btn-layout').forEach(btn => {
+      btn.className = 'btn-layout px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-ocean-50/50';
+      btn.addEventListener('click', () => buildLayout(btn.dataset.layout));
+    });
+    buildLayout('single');
+
+    // Frame styles
+    function applyFrameStyle(type) {
+      frameWrap.className = 'relative mx-auto rounded-2xl bg-white shadow-soft transition-all duration-300';
+      frameWrap.style.filter = '';
+      frameWrap.style.boxShadow = '';
+      frameWrap.style.border = '';
+      frameWrap.style.background = 'white';
+
+      if (type === 'polaroid') {
+        frameWrap.classList.add('p-4', 'pt-6', 'rounded-3xl', 'border', 'border-slate-200');
+        // Polaroid look with thicker bottom
+        frameWrap.style.paddingBottom = '3rem';
+        frameWrap.style.background = '#fff';
+      } else if (type === 'neon') {
+        frameWrap.classList.add('rounded-3xl');
+        frameWrap.style.boxShadow = '0 0 0 3px rgba(155,124,255,0.35), 0 0 35px 8px rgba(86,176,255,0.35)';
+        frameWrap.style.background = 'linear-gradient(135deg, rgba(155,124,255,0.08), rgba(86,176,255,0.08))';
+        frameWrap.style.border = '1px solid rgba(255,255,255,0.6)';
+      } else if (type === 'glass') {
+        frameWrap.classList.add('rounded-3xl', 'border', 'border-white/70', 'backdrop-blur-14');
+        frameWrap.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.60), rgba(230,240,255,0.55))';
+      }
+    }
+    $$('.btn-frame').forEach(btn => {
+      btn.className = 'btn-frame px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-brand-50/50';
+      btn.addEventListener('click', () => applyFrameStyle(btn.dataset.frame));
+    });
+
+    // Upload image
+    $('#fileInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        // put image to first empty slot (or first slot)
+        const slots = $$('.slot-img');
+        const target = slots.find(img => !img.src) || slots[0];
+        if (target) target.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    // Camera
+    const video = $('#video');
+    const btnStartCam = $('#btnStartCam');
+    const btnSnap = $('#btnSnap');
+    const btnStopCam = $('#btnStopCam');
+    let stream = null;
+
+    btnStartCam.addEventListener('click', async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream; video.classList.remove('hidden'); video.play();
+        btnSnap.disabled = false; btnStopCam.disabled = false;
+      } catch (err) {
+        alert('Tidak dapat mengakses kamera: ' + err.message);
+      }
+    });
+
+    btnSnap.addEventListener('click', () => {
+      if (!stream) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+      const slots = $$('.slot-img');
+      const target = slots.find(img => !img.src) || slots[0];
+      if (target) target.src = dataURL;
+      // tiny camera click sound using WebAudio
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'triangle'; o.frequency.value = 900; o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08); o.stop(audioCtx.currentTime + 0.09);
+      } catch (e) {}
+    });
+
+    btnStopCam.addEventListener('click', () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null; video.pause(); video.srcObject = null; video.classList.add('hidden');
+      }
+      btnSnap.disabled = true; btnStopCam.disabled = true;
+    });
+
+    // Overlays: stickers & text
+    function makeOverlayEl(html) {
+      const wrap = document.createElement('div');
+      wrap.className = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab pointer-events-auto select-none';
+      wrap.innerHTML = html;
+      overlayLayer.appendChild(wrap);
+      enableDrag(wrap);
+      return wrap;
+    }
+
+    // Stickers
+    $('#stickerPanel').addEventListener('click', (e) => {
+      if (!(e.target && e.target.classList.contains('sticker'))) return;
+      const emoji = e.target.textContent.trim();
+      makeOverlayEl(`<div class="text-5xl">${emoji}</div>`);
+    });
+
+    // Text overlay
+    $('#btnAddText').addEventListener('click', () => {
+      const txt = $('#textInput').value.trim(); if (!txt) return;
+      const font = $('#fontSelect').value; const size = $('#textSize').value;
+      makeOverlayEl(`<div class="${font} px-2 py-1 rounded-lg bg-white/70 backdrop-blur text-slate-800 border border-white/70 shadow-soft" style="font-size:${size}px">${txt}</div>`);
+      $('#textInput').value = '';
+    });
+
+    // Clear overlays
+    $('#btnClearOverlays').addEventListener('click', () => { overlayLayer.innerHTML = ''; });
+
+    // Drag logic for overlays
+    function enableDrag(el) {
+      let isDown = false; let startX=0, startY=0; let x=0, y=0;
+      el.addEventListener('pointerdown', (e) => {
+        isDown = true; el.setPointerCapture(e.pointerId); el.classList.add('dragging');
+        startX = e.clientX; startY = e.clientY; const m = getComputedStyle(el).transform;
+        const mat = new DOMMatrix(m); x = mat.m41; y = mat.m42;
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (!isDown) return; const dx = e.clientX - startX; const dy = e.clientY - startY;
+        el.style.transform = `translate(${x+dx}px, ${y+dy}px)`;
+      });
+      el.addEventListener('pointerup', (e) => { isDown = false; el.releasePointerCapture(e.pointerId); el.classList.remove('dragging'); });
+      el.addEventListener('dblclick', () => { el.remove(); });
+      // make selectable for edit if it's text
+      const inner = el.firstElementChild;
+      if (inner && inner.matches('.font-sans, .font-serif, .font-mono')) {
+        inner.setAttribute('contenteditable','true');
+        inner.addEventListener('blur', () => { if (!inner.textContent.trim()) el.remove(); });
+      }
+    }
+
+    // Download export
+    $('#btnDownload').addEventListener('click', async () => {
+      const node = $('#captureRoot');
+      const scale = 2; // crisp export
+      const canvas = await html2canvas(node, { scale, backgroundColor: null });
+      const link = document.createElement('a');
+      link.download = 'photobox.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    // Theme toggle (pastel variants)
+    let pastel = true;
+    $('#btnTheme').addEventListener('click', () => {
+      pastel = !pastel;
+      if (pastel) {
+        document.body.className = 'min-h-screen font-display bg-gradient-to-br from-white via-ocean-50 to-brand-50 text-slate-800';
+        $('#btnTheme').textContent = 'Tema Pastel';
+      } else {
+        document.body.className = 'min-h-screen font-display bg-gradient-to-br from-white via-brand-50 to-ocean-50 text-slate-900';
+        $('#btnTheme').textContent = 'Tema Soft';
+      }
+    });
+
+    // Make stage droppable (global)
+    $('#captureRoot').addEventListener('dragover', e => e.preventDefault());
+
+    // Init filters
+    updateFilters();
+  </script>
+</body>
+</html>
